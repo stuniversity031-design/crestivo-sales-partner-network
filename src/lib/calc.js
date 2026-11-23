@@ -65,11 +65,19 @@ export const byMonth = (sales, settings, services) => {
   return Object.values(map).sort((a, b) => a.month.localeCompare(b.month));
 };
 
+// Neutralizes spreadsheet formula injection: text starting with = + - @ tab or CR
+// is prefixed with an apostrophe so Excel/Sheets treat it as plain text.
+export const csvSafe = (v) => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  const s = String(v ?? "");
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+};
+
 export const exportCSV = (filename, rows) => {
   if (!rows.length) return;
   const keys = Object.keys(rows[0]);
-  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = [keys.join(","), ...rows.map((r) => keys.map((k) => esc(r[k])).join(","))].join("\n");
+  const esc = (v) => `"${String(csvSafe(v)).replace(/"/g, '""')}"`;
+  const csv = [keys.map(esc).join(","), ...rows.map((r) => keys.map((k) => esc(r[k])).join(","))].join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   const a = document.createElement("a");
   a.href = url;
