@@ -3,3 +3,5 @@ dist
 .DS_Store
 src_original_backup
 .vercel
+.env
+.env.local

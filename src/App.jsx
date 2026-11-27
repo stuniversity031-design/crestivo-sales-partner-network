@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useStore } from "./state/store.jsx";
+import { useAuth } from "./state/auth.jsx";
 import Shell, { NAV } from "./components/Shell.jsx";
 import { PageHead, Empty } from "./components/ui.jsx";
+import Login from "./pages/Login.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
 import Partners from "./pages/admin/Partners.jsx";
 import Leads from "./pages/admin/Leads.jsx";
@@ -33,11 +35,34 @@ const ROUTES = {
 };
 
 export default function App() {
-  const { session } = useStore();
+  const { user, profile, loading, signOut } = useAuth();
+  const { session, setRole } = useStore();
   const [page, setPage] = useState("dashboard");
-  const valid = NAV[session.role].flatMap((g) => g.items).some((i) => i[0] === page);
+
+  useEffect(() => {
+    if (!profile) return;
+    const pid = profile.partner_id || session.partnerId;
+    if (session.role !== profile.role || session.partnerId !== pid) setRole(profile.role, pid);
+  }, [profile, session.role, session.partnerId]);
+
+  if (loading) return <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>Loading…</div>;
+  if (!user) return <Login />;
+  if (!profile) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", textAlign: "center" }}>
+        <div>
+          <h3>Account not set up</h3>
+          <p className="muted">Contact your administrator.</p>
+          <button className="btn" onClick={signOut}>Sign out</button>
+        </div>
+      </div>
+    );
+  }
+  if (session.role !== profile.role) return null;
+
+  const valid = NAV[profile.role].flatMap((g) => g.items).some((i) => i[0] === page);
   const current = valid ? page : "dashboard";
-  const Page = ROUTES[session.role][current];
+  const Page = ROUTES[profile.role][current];
   return (
     <Shell page={current} setPage={setPage}>
       {Page ? <Page /> : <Soon id={current} />}

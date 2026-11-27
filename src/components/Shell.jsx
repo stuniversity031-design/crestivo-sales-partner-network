@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard, Users, Target, Kanban, Wallet, Package, Edit3, Settings, Search, Bell, Menu,
-  PanelLeftClose, PanelLeftOpen, Link2, BookOpen, TrendingUp, UserCircle, Globe, CheckCheck, RotateCcw
+  PanelLeftClose, PanelLeftOpen, Link2, BookOpen, TrendingUp, UserCircle, Globe, CheckCheck, RotateCcw, LogOut
 } from "lucide-react";
 import { useStore } from "../state/store.jsx";
+import { useAuth } from "../state/auth.jsx";
 import { Modal, Toasts } from "./ui.jsx";
 
 export const NAV = {
@@ -25,7 +26,8 @@ export const NAV = {
 
 export default function Shell({ page, setPage, children }) {
   const store = useStore();
-  const { session, setRole, partners, notifications, markAllRead, prefs, setPref, resetAll, settings } = store;
+  const { profile, signOut } = useAuth();
+  const { session, notifications, markAllRead, prefs, setPref, resetAll, settings } = store;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [palette, setPalette] = useState(false);
   const [bell, setBell] = useState(false);
@@ -62,7 +64,9 @@ export default function Shell({ page, setPage, children }) {
           </div>
         ))}
         <div className="sideFoot">
-          <button className="btn sm ghost" onClick={resetAll}><RotateCcw size={14} /> Reset demo data</button>
+          {session.role === "admin" && (
+            <button className="btn sm ghost" onClick={resetAll}><RotateCcw size={14} /> Reset demo data</button>
+          )}
         </div>
       </aside>
 
@@ -77,15 +81,8 @@ export default function Shell({ page, setPage, children }) {
           <button className="searchBtn" onClick={() => setPalette(true)}>
             <Search size={15} /><span>Search or jump to…</span><span className="kbd">⌘K</span>
           </button>
-          <div className="roleSwitch">
-            <button className={session.role === "admin" ? "on" : ""} onClick={() => { setRole("admin"); setPage("dashboard"); }}>Admin</button>
-            <button className={session.role === "partner" ? "on" : ""} onClick={() => { setRole("partner"); setPage("dashboard"); }}>Partner</button>
-          </div>
-          {session.role === "partner" && (
-            <select style={{ width: 160 }} value={session.partnerId} onChange={(e) => setRole("partner", e.target.value)}>
-              {partners.filter((p) => p.status === "active").map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          )}
+          <span className="muted">{profile?.email}</span>
+          <button className="btn sm" onClick={signOut}><LogOut size={14} /> Sign out</button>
           <button className="iconBtn" onClick={() => setBell(true)}>
             <Bell size={18} />{unread > 0 && <i className="dot" />}
           </button>
